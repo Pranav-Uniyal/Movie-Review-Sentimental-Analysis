@@ -24,10 +24,11 @@ Using techniques from natural language processing (NLP) and deep learning, this 
 
 ```
 Movie-Review-Sentimental-Analysis/
-├── main.py                          # Streamlit app script
+├── main.py                         # Streamlit app script
 ├── sentiment_analysis_model.h5     # Pre-trained sentiment model
-├── tokenizer.pkl                   # Tokenizer used during training              
-└── README.md                       # Project documentation (this file)
+├── tokenizer.pkl                   # Tokenizer used during training
+├── README.md                       # Project documentation (this file)                                 
+└── Movie_Sentiment_NB              #Jupyter Notebook where model is created and trained 
 ```
 
 ---
