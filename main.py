@@ -4,7 +4,8 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 import pickle
 
 # Load Model
-model_path = r'C:\Users\loku0\OneDrive\Desktop\Movie Sentimental\sentiment_analysis_model.h5'
+model_path = r'C:\Users\loku0\OneDrive\Desktop\Movie Sentimental\sentiment_analysis_model.h5' # you can add path of model according to your directory
+                                                                                              # where you have saved it  
 try:
     model = load_model(model_path)
 except OSError:
