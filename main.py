@@ -4,20 +4,22 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 import pickle
 
 # Load Model
-model_path = r'C:\Users\loku0\OneDrive\Desktop\Movie Sentimental\sentiment_analysis_model.h5' # you can add path of model according to your directory
-                                                                                              # where you have saved it  
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+model_path = os.path.join(BASE_DIR, "sentiment_analysis_model.h5")
+tokenizer_path = os.path.join(BASE_DIR, "tokenizer.pkl")
+                                                                                              
 try:
     model = load_model(model_path)
 except OSError:
     st.error("Error loading the model. Please check if the file exists and is not corrupted.")
 
-# Load Tokenizer
-tokenizer_path = r'C:\Users\loku0\OneDrive\Desktop\Movie Sentimental\tokenizer.pkl'
 try:
     with open(tokenizer_path, "rb") as handle:
         tokenizer = pickle.load(handle)
 except FileNotFoundError:
     st.error("Tokenizer file not found. Please check the path.")
+
 
 # App Title
 st.title("Movie Review Sentiment Analysis")
@@ -57,3 +59,4 @@ if st.button("Analyze"):
 
 # Footer
 st.write("This is the sentimental review.")
+
