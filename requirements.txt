@@ -1,4 +1,4 @@
-streamlit
-tensorflow
-numpy
-pickle
+streamlit==1.32.2
+tensorflow==2.15.0
+numpy==1.26.4
+pickle-mixin==1.0.2
