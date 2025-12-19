@@ -4,138 +4,57 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 import pickle
 import os
 
-# =====================================================
-# Page Config
-# =====================================================
-st.set_page_config(
-    page_title="Movie Sentiment Analyzer 🎬",
-    page_icon="🎥",
-    layout="centered"
-)
-
-# =====================================================
-# Custom CSS (UI MAGIC ✨)
-# =====================================================
-st.markdown("""
-<style>
-.main {
-    background-color: #0f172a;
-}
-h1, h2, h3, h4, p, label {
-    color: #e5e7eb !important;
-}
-.card {
-    background: linear-gradient(135deg, #1e293b, #020617);
-    padding: 20px;
-    border-radius: 18px;
-    box-shadow: 0 0 25px rgba(255, 215, 0, 0.15);
-    margin-top: 20px;
-}
-.rating {
-    font-size: 40px;
-    font-weight: bold;
-    color: gold;
-}
-.sentiment-positive {
-    color: #22c55e;
-    font-size: 26px;
-    font-weight: bold;
-}
-.sentiment-negative {
-    color: #ef4444;
-    font-size: 26px;
-    font-weight: bold;
-}
-.footer {
-    color: #94a3b8;
-    text-align: center;
-    margin-top: 30px;
-    font-size: 14px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# =====================================================
-# Load model & tokenizer (Cloud Safe)
-# =====================================================
+# Load Model
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 model_path = os.path.join(BASE_DIR, "sentiment_analysis_model.h5")
 tokenizer_path = os.path.join(BASE_DIR, "tokenizer.pkl")
 
-@st.cache_resource
-def load_resources():
+try:
     model = load_model(model_path)
-    with open(tokenizer_path, "rb") as f:
-        tokenizer = pickle.load(f)
-    return model, tokenizer
+except OSError:
+    st.error("Error loading the model. Please check if the file exists and is not corrupted.")
+try:
+    with open(tokenizer_path, "rb") as handle:
+        tokenizer = pickle.load(handle)
+except FileNotFoundError:
+    st.error("Tokenizer file not found. Please check the path.")
 
-model, tokenizer = load_resources()
+# App Title
+st.title("Movie Review Sentiment Analysis")
 
-# =====================================================
-# Header
-# =====================================================
-st.title("🎬 Movie Review Sentiment Analyzer")
-st.write("Analyze movie reviews with **AI-powered sentiment detection** & **IMDB-style ratings** ⭐")
+# App Description
+st.write("""
+### Analyze if a movie review is positive or negative""")
 
-# =====================================================
-# Input
-# =====================================================
-review = st.text_area(
-    "✍️ Enter a movie review",
-    height=160,
-    placeholder="This movie was absolutely amazing with stunning performances..."
-)
+# Input Box
+review = st.text_area("Enter a movie review:")
 
-# =====================================================
-# Prediction Logic
-# =====================================================
+# Prediction Function
 def predict_sentiment(text):
-    seq = tokenizer.texts_to_sequences([text])
-    padded = pad_sequences(seq, maxlen=200)
-    prob = model.predict(padded, verbose=0)[0][0]
+    try:
+        # Preprocess the input
+        sequences = tokenizer.texts_to_sequences([text])
+        padded = pad_sequences(sequences, maxlen=200)  # Assuming maxlen used in training was 200
 
-    sentiment = "Positive 😊" if prob > 0.5 else "Negative 😞"
-    rating = round(prob * 10, 1) if prob > 0.5 else round((1 - prob) * 10, 1)
+        # Predict sentiment
+        prediction = model.predict(padded)
+        sentiment = "Positive" if prediction[0] > 0.5 else "Negative"
+        confidence = prediction[0][0] if prediction[0] > 0.5 else 1 - prediction[0][0]
+        return sentiment, confidence
+    except Exception as e:
+        st.error(f"Error during prediction: {e}")
+        return None, None
 
-    return sentiment, prob, rating
-
-# =====================================================
-# Button
-# =====================================================
-if st.button("🎯 Analyze Review"):
-    if not review.strip():
-        st.warning("Please enter a review to analyze.")
+# Predict Button
+if st.button("Analyze"):
+    if review.strip() == "":
+        st.error("Please enter a valid review!")
     else:
-        sentiment, confidence, rating = predict_sentiment(review)
+        sentiment, confidence = predict_sentiment(review)
+        if sentiment:
+            st.write(f"### Sentiment: {sentiment}")
+            st.write(f"### Confidence: {confidence:.2f}")
 
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-
-        # Sentiment
-        if "Positive" in sentiment:
-            st.markdown(f'<div class="sentiment-positive">🎉 {sentiment}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="sentiment-negative">💔 {sentiment}</div>', unsafe_allow_html=True)
-
-        # Rating
-        st.markdown(f'<div class="rating">⭐ {rating} / 10</div>', unsafe_allow_html=True)
-
-        # Confidence bar
-        st.progress(float(confidence if confidence > 0.5 else 1 - confidence))
-
-        st.write(f"**Model Confidence:** `{max(confidence, 1-confidence):.2f}`")
-
-        # Verdict
-        if rating >= 8:
-            st.success("🔥 Blockbuster – Highly Recommended!")
-        elif rating >= 6:
-            st.info("👍 Worth Watching")
-        else:
-            st.warning("👎 Not Recommended")
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# =====================================================
 # Footer
-# =====================================================
-st.markdown('<div class="footer">Built with ❤️ using TensorFlow & Streamlit</div>', unsafe_allow_html=True)
+st.write("This is the sentimental review.")
