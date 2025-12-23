@@ -11,7 +11,7 @@ model_path = os.path.join(BASE_DIR, "sentiment_analysis_model.h5")
 tokenizer_path = os.path.join(BASE_DIR, "tokenizer.pkl")
 
 try:
-    model = load_model(model_path)
+    model = load_model(model_path, compile=False)
 except OSError:
     st.error("Error loading the model. Please check if the file exists and is not corrupted.")
 try:
@@ -58,3 +58,4 @@ if st.button("Analyze"):
 
 # Footer
 st.write("This is the sentimental review.")
+
