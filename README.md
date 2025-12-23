@@ -1,4 +1,4 @@
-# 🎬 Movie Review Sentimental Analysis
+# 🎬 Movie Review Sentimental Analysis | [Live](https://movie-review-sentimental-analysis-hkbwzmp9jcacgk5dyo3hle.streamlit.app/)
 
 This project is a Streamlit-based web application that performs **sentiment analysis** on user-written movie reviews. It uses a pre-trained deep learning model (Keras with TensorFlow backend) to classify reviews as either **Positive** or **Negative**, and displays a corresponding **confidence score**.
 
