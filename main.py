@@ -1,30 +1,34 @@
 import streamlit as st
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, SpatialDropout1D
+from tensorflow.keras.layers import Embedding, LSTM, Dense, SpatialDropout1D
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import pickle
 import os
+import sys
 
-# --- MODEL CONFIGURATION ---
-# These MUST match the settings used during training
-VOCAB_SIZE = 5000 
+# --- UPDATED CONFIGURATION ---
+# Fixed to 5000 based on your error message
+VOCAB_SIZE = 5000  
 MAX_LEN = 200
 EMBEDDING_DIM = 128
+
+# Fix for "No module named 'keras.src.legacy'"
+# We tell Python to treat 'keras.src' as a valid path if it's missing
+if 'keras' in sys.modules:
+    import keras
+    if not hasattr(keras, 'src'):
+        sys.modules['keras.src.legacy'] = keras
 
 @st.cache_resource
 def get_model():
     model_path = "sentiment_analysis_model.h5"
-    
-    # 1. Manually Rebuild the Architecture
     model = Sequential([
         Embedding(VOCAB_SIZE, EMBEDDING_DIM, input_length=MAX_LEN),
         SpatialDropout1D(0.4),
         LSTM(128, dropout=0.2, recurrent_dropout=0.2),
         Dense(1, activation='sigmoid')
     ])
-    
-    # 2. Load Weights Only (Bypasses the TypeError)
     try:
         model.load_weights(model_path)
         return model
@@ -38,34 +42,25 @@ def get_tokenizer():
         with open("tokenizer.pkl", "rb") as handle:
             return pickle.load(handle)
     except Exception as e:
-        st.error(f"Tokenizer error: {e}")
+        st.error(f"Tokenizer Error: {e}. If this persists, you may need to re-save your tokenizer using the new Keras version.")
         return None
 
-# Load resources
+# Load Resources
 model = get_model()
 tokenizer = get_tokenizer()
 
-# --- APP UI ---
+# --- UI LOGIC ---
 st.title("🎬 Movie Review Sentiment Analysis")
-review = st.text_area("Enter your movie review:", height=150)
+review = st.text_area("Enter your review:", height=150)
 
-if st.button("Analyze Sentiment"):
-    if not review.strip():
-        st.warning("Please enter some text.")
-    elif model and tokenizer:
-        with st.spinner("Analyzing..."):
-            # Preprocessing
-            seq = tokenizer.texts_to_sequences([review])
-            padded = pad_sequences(seq, maxlen=MAX_LEN)
-            
-            # Prediction
-            prediction = model.predict(padded)[0][0]
-            
-            # Results display
-            res = "Positive" if prediction > 0.5 else "Negative"
-            color = "green" if res == "Positive" else "red"
-            
-            st.markdown(f"### Sentiment: :{color}[{res}]")
-            st.progress(float(prediction) if res == "Positive" else 1.0 - float(prediction))
-            st.write(f"**Confidence Score:** {prediction:.2f}")
-
+if st.button("Analyze"):
+    if review.strip() and model and tokenizer:
+        seq = tokenizer.texts_to_sequences([review])
+        padded = pad_sequences(seq, maxlen=MAX_LEN)
+        prediction = model.predict(padded)[0][0]
+        
+        label = "Positive" if prediction > 0.5 else "Negative"
+        st.markdown(f"### Sentiment: **{label}**")
+        st.write(f"Confidence: {prediction if label == 'Positive' else 1-prediction:.2f}")
+    else:
+        st.warning("Ensure text is entered and model/tokenizer are loaded.")
