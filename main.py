@@ -8,7 +8,7 @@ import os
 
 # --- MODEL CONFIGURATION ---
 # These MUST match the settings used during training
-VOCAB_SIZE = 10000 
+VOCAB_SIZE = 5000 
 MAX_LEN = 200
 EMBEDDING_DIM = 128
 
@@ -68,3 +68,4 @@ if st.button("Analyze Sentiment"):
             st.markdown(f"### Sentiment: :{color}[{res}]")
             st.progress(float(prediction) if res == "Positive" else 1.0 - float(prediction))
             st.write(f"**Confidence Score:** {prediction:.2f}")
+
