@@ -1,65 +1,70 @@
 import streamlit as st
 import tensorflow as tf
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, SpatialDropout1D
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import pickle
 import os
-import urllib.request
 
-# Config
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "sentiment_analysis_model.h5")
-TOKENIZER_PATH = os.path.join(BASE_DIR, "tokenizer.pkl")
-# Replace the URL below with your actual GitHub Raw link if deployment fails
-RAW_MODEL_URL = "https://github.com/Pranav-Uniyal/Movie-Review-Sentimental-Analysis/raw/main/sentiment_analysis_model.h5"
+# --- MODEL CONFIGURATION ---
+# These MUST match the settings used during training
+VOCAB_SIZE = 10000 
+MAX_LEN = 200
+EMBEDDING_DIM = 128
 
 @st.cache_resource
 def get_model():
-    # Fix for Git LFS: Check if file is just a pointer (tiny size)
-    if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 10000:
-        with st.spinner("Downloading full model file..."):
-            urllib.request.urlretrieve(RAW_MODEL_URL, MODEL_PATH)
+    model_path = "sentiment_analysis_model.h5"
     
-    # safe_mode=False is required for Keras 3 to load legacy .h5 files
-    return load_model(MODEL_PATH, compile=False, safe_mode=False)
+    # 1. Manually Rebuild the Architecture
+    model = Sequential([
+        Embedding(VOCAB_SIZE, EMBEDDING_DIM, input_length=MAX_LEN),
+        SpatialDropout1D(0.4),
+        LSTM(128, dropout=0.2, recurrent_dropout=0.2),
+        Dense(1, activation='sigmoid')
+    ])
+    
+    # 2. Load Weights Only (Bypasses the TypeError)
+    try:
+        model.load_weights(model_path)
+        return model
+    except Exception as e:
+        st.error(f"Error loading weights: {e}")
+        return None
 
 @st.cache_resource
 def get_tokenizer():
-    with open(TOKENIZER_PATH, "rb") as handle:
-        return pickle.load(handle)
+    try:
+        with open("tokenizer.pkl", "rb") as handle:
+            return pickle.load(handle)
+    except Exception as e:
+        st.error(f"Tokenizer error: {e}")
+        return None
 
-# Initialization
+# Load resources
 model = get_model()
 tokenizer = get_tokenizer()
 
-# UI
+# --- APP UI ---
 st.title("🎬 Movie Review Sentiment Analysis")
-review = st.text_area("Enter review:", height=150)
+review = st.text_area("Enter your movie review:", height=150)
 
-def predict_sentiment(text):
-    try:
-        sequences = tokenizer.texts_to_sequences([text])
-        padded = pad_sequences(sequences, maxlen=200)
-        prediction = model.predict(padded)
-        
-        score = prediction[0][0]
-        sentiment = "Positive" if score > 0.5 else "Negative"
-        confidence = score if score > 0.5 else 1 - score
-        return sentiment, confidence
-    except Exception as e:
-        st.error(f"Prediction error: {e}")
-        return None, None
-
-if st.button("Analyze"):
-    if review.strip():
-        with st.spinner("Processing..."):
-            res, conf = predict_sentiment(review)
-            if res:
-                color = "green" if res == "Positive" else "red"
-                st.markdown(f"### Sentiment: :{color}[{res}]")
-                st.write(f"**Confidence:** {conf:.2f}")
-    else:
-        st.warning("Please enter text.")
-
-st.divider()
-st.caption("Built with Streamlit & TensorFlow")
+if st.button("Analyze Sentiment"):
+    if not review.strip():
+        st.warning("Please enter some text.")
+    elif model and tokenizer:
+        with st.spinner("Analyzing..."):
+            # Preprocessing
+            seq = tokenizer.texts_to_sequences([review])
+            padded = pad_sequences(seq, maxlen=MAX_LEN)
+            
+            # Prediction
+            prediction = model.predict(padded)[0][0]
+            
+            # Results display
+            res = "Positive" if prediction > 0.5 else "Negative"
+            color = "green" if res == "Positive" else "red"
+            
+            st.markdown(f"### Sentiment: :{color}[{res}]")
+            st.progress(float(prediction) if res == "Positive" else 1.0 - float(prediction))
+            st.write(f"**Confidence Score:** {prediction:.2f}")
